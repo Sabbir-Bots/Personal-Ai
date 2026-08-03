@@ -39,7 +39,7 @@ BANGLADESH_DISTRICTS = [
 
     # সিলেট বিভাগ
     "সিলেট", "মৌলভীবাজার", "হবিগঞ্জ", "সুনামগঞ্জ",
-    "Sylhet", "Moulvibazar", "Habiganj", "Sunamganj",
+    "Sylhet", "Moulvibazar", "Habiganj", "Sunamগঞ্জ",
 
     # বরিশাল বিভাগ
     "বরিশাল", "ভোলা", "পটুয়াখালী", "পিরোজপুর", "বরগুনা", "ঝালকাঠি",
@@ -67,7 +67,7 @@ def process_rule_engine(user_id, user_name, message_text):
     """
     message_lower = message_text.lower()
     
-    # ১. জেলা চেক করা এবং সেভ করা (যেমন: "আমার বাসা নেত্রকোনা" বা শুধু "নেত্রকোনা")
+    # ১. জেলা চেক করা এবং সেভ করা
     district = check_district_in_message(message_text)
     if district:
         doc_ref = db.collection('group_members').document(str(user_id))
@@ -90,8 +90,8 @@ def process_rule_engine(user_id, user_name, message_text):
             print(f"[Rule Engine Saved] User: {user_name} | Admit Card: False")
             return f"{user_name}, আপনার এডমিট কার্ড না পাওয়ার বিষয়টি রেকর্ড করা হয়েছে।"
 
-    # ৩. কেউ যদি জেলা দিয়ে কাউকে খুঁজতে চায় (যেমন: "নেত্রকোনার কে কে আছো?")
-    if "কে কে আছো" in message_lower or "কে আছো" in message_lower or "কেঁ কে আছেন" in message_lower:
+    # ৩. কেউ যদি জেলা দিয়ে কাউকে খুঁজতে চায়
+    if "কে কে আছো" in message_lower or "কে আছো" in message_lower or "কে কে আছেন" in message_lower:
         target_district = check_district_in_message(message_text)
         if target_district:
             users_ref = db.collection('group_members')
@@ -100,7 +100,7 @@ def process_rule_engine(user_id, user_name, message_text):
             matched_names = []
             for doc in query:
                 data = doc.to_dict()
-                if doc.id != str(user_id):  ზი (নিজেকে বাদ দিয়ে)
+                if doc.id != str(user_id):  # নিজেকে বাদ দিয়ে
                     matched_names.append(data.get('name', 'User'))
             
             if matched_names:
@@ -110,14 +110,4 @@ def process_rule_engine(user_id, user_name, message_text):
                 return f"@{user_name}, {target_district} থেকে আর কেউ লিস্টে নেই।"
 
     return None
-
-# টেস্ট লজিক
-if __name__ == "__main__":
-    print("Rule Engine script is running...")
-    # টেস্ট মেসেজ ১: জেলা সেভ করা
-    # process_rule_engine("user_001", "Rahim", "আমার বাসা নেত্রকোনা")
-    
-    # টেস্ট মেসেজ ২: কাউকে খোঁজা
-    # response = process_rule_engine("user_002", "Karim", "নেত্রকোনার কে কে আছো?")
-    # print("Bot Response:", response)
     
