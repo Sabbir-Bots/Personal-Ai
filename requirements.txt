@@ -1,0 +1,4 @@
+firebase-admin
+selenium
+playwright
+requests
