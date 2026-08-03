@@ -55,39 +55,69 @@ BANGLADESH_DISTRICTS = [
 ]
 
 def check_district_in_message(message_text):
-    """মেসেজ থেকে ৬৪ জেলার যেকোনো একটি খুঁজে বের করার ফাংশন"""
+    """মেসেজ থেকে ৬৪ জেলার যেকোনো একটি খুঁজে বের করার রুল"""
     for district in BANGLADESH_DISTRICTS:
         if district.lower() in message_text.lower():
             return district
     return None
 
-def save_user_to_firestore(user_id, user_name, district):
-    """ফায়ারস্টোরে ইউজারের তথ্য সেভ করার ফাংশন"""
-    doc_ref = db.collection('group_members').document(str(user_id))
-    doc_ref.set({
-        'name': user_name,
-        'district': district,
-        'status': 'active'
-    }, merge=True)
-    print(f"Firestore Saved -> Name: {user_name} | District: {district}")
-
-def find_users_by_district(district_name):
-    """ফায়ারবেস থেকে নির্দিষ্ট জেলার ইউজারদের খুঁজে বের করার ফাংশন"""
-    users_ref = db.collection('group_members')
-    query = users_ref.where('district', '==', district_name).stream()
+def process_rule_engine(user_id, user_name, message_text):
+    """
+    রুল ইঞ্জিন: মেসেজ বিশ্লেষণ করে ডেটাবেজে সেভ বা কুয়েরি করার মূল ফাংশন
+    """
+    message_lower = message_text.lower()
     
-    matched_users = []
-    for doc in query:
-        user_data = doc.to_dict()
-        matched_users.append(user_data)
-        
-    return matched_users
+    # ১. জেলা চেক করা এবং সেভ করা (যেমন: "আমার বাসা নেত্রকোনা" বা শুধু "নেত্রকোনা")
+    district = check_district_in_message(message_text)
+    if district:
+        doc_ref = db.collection('group_members').document(str(user_id))
+        doc_ref.set({
+            'name': user_name,
+            'district': district,
+            'status': 'active'
+        }, merge=True)
+        print(f"[Rule Engine Saved] User: {user_name} | District: {district}")
+        return f"ধন্যবাদ {user_name}, আপনার জেলা ({district}) সফলভাবে সেভ করা হয়েছে।"
+
+    # ২. এডমিট কার্ড সংক্রান্ত রুল
+    if "এডমিট কার্ড" in message_lower or "admit card" in message_lower:
+        if "পাইনি" in message_lower or "আসেনি" in message_lower or "missing" in message_lower:
+            doc_ref = db.collection('group_members').document(str(user_id))
+            doc_ref.set({
+                'name': user_name,
+                'admit_card': False
+            }, merge=True)
+            print(f"[Rule Engine Saved] User: {user_name} | Admit Card: False")
+            return f"{user_name}, আপনার এডমিট কার্ড না পাওয়ার বিষয়টি রেকর্ড করা হয়েছে।"
+
+    # ৩. কেউ যদি জেলা দিয়ে কাউকে খুঁজতে চায় (যেমন: "নেত্রকোনার কে কে আছো?")
+    if "কে কে আছো" in message_lower or "কে আছো" in message_lower or "কেঁ কে আছেন" in message_lower:
+        target_district = check_district_in_message(message_text)
+        if target_district:
+            users_ref = db.collection('group_members')
+            query = users_ref.where('district', '==', target_district).stream()
+            
+            matched_names = []
+            for doc in query:
+                data = doc.to_dict()
+                if doc.id != str(user_id):  ზი (নিজেকে বাদ দিয়ে)
+                    matched_names.append(data.get('name', 'User'))
+            
+            if matched_names:
+                names_str = ", ".join(matched_names)
+                return f"@{user_name}, {target_district} থেকে এরা আছেন: {names_str}"
+            else:
+                return f"@{user_name}, {target_district} থেকে আর কেউ লিস্টে নেই।"
+
+    return None
 
 # টেস্ট লজিক
 if __name__ == "__main__":
-    print("Script.py is fully ready with database & district functions...")
-    # উদাহরণস্বরূপ টেস্ট:
-    # incoming_message = "আমার বাসা সিলেট।"
-    # district = check_district_in_message(incoming_message)
-    # if district:
-    #     save_user_to_firestore("12345", "Sabbir", district)
+    print("Rule Engine script is running...")
+    # টেস্ট মেসেজ ১: জেলা সেভ করা
+    # process_rule_engine("user_001", "Rahim", "আমার বাসা নেত্রকোনা")
+    
+    # টেস্ট মেসেজ ২: কাউকে খোঁজা
+    # response = process_rule_engine("user_002", "Karim", "নেত্রকোনার কে কে আছো?")
+    # print("Bot Response:", response)
+    
