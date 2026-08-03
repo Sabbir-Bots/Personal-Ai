@@ -47,7 +47,7 @@ BANGLADESH_DISTRICTS = [
 
     # রংপুর বিভাগ
     "রংপুর", "দিনাজপুর", "বগুড়া", "গাইবান্ধা", "কুড়িগ্রাম", "নীলফামারী", "পঞ্চগড়", "ঠাকুরগাঁও",
-    "Rangpur", "Dinajpur", "Gaibandha", "Kurigram", "Nilphamari", "Panchagarh", "Thakurgaon",
+    "Rangpur", "Dinajpur", "Gaibandha", "Kurigram", "Nilfamari", "Panchagarh", "Thakurgaon",
 
     # ময়মনসিংহ বিভাগ
     "ময়মনসিংহ", "নেত্রকোনা", "জামালপুর", "শেরপুর",
@@ -71,11 +71,23 @@ def save_user_to_firestore(user_id, user_name, district):
     }, merge=True)
     print(f"Firestore Saved -> Name: {user_name} | District: {district}")
 
+def find_users_by_district(district_name):
+    """ফায়ারবেস থেকে নির্দিষ্ট জেলার ইউজারদের খুঁজে বের করার ফাংশন"""
+    users_ref = db.collection('group_members')
+    query = users_ref.where('district', '==', district_name).stream()
+    
+    matched_users = []
+    for doc in query:
+        user_data = doc.to_dict()
+        matched_users.append(user_data)
+        
+    return matched_users
+
 # টেস্ট লজিক
 if __name__ == "__main__":
-    print("Script.py with 64 districts is ready...")
-    incoming_message = "আমার বাসা পঞ্চগড়।"
-    district = check_district_in_message(incoming_message)
-    if district:
-        save_user_to_firestore("12345", "Sabbir", district)
-        
+    print("Script.py is fully ready with database & district functions...")
+    # উদাহরণস্বরূপ টেস্ট:
+    # incoming_message = "আমার বাসা সিলেট।"
+    # district = check_district_in_message(incoming_message)
+    # if district:
+    #     save_user_to_firestore("12345", "Sabbir", district)
